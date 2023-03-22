@@ -69,7 +69,7 @@ impl EventHandler for Handler {
             return;
         }
 
-        if msg.content.contains("bot") {
+        if msg.content.to_ascii_lowercase().contains("bot") {
             if let Some(ai_input) = ai_input {
                 match self.ai_handler.chat().create(ai_input).await {
                     Err(err) => warn!(?err, "Didn't get openai response"),
