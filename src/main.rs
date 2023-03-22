@@ -1,45 +1,71 @@
+use std::collections::hash_map::Entry;
+use std::collections::{HashMap, VecDeque};
 use std::env;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use std::sync::Mutex;
 use tracing::info;
-use tracing::log::warn;
-use tracing::{event, span, Level};
+use tracing::warn;
+use tracing::{span, Level};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 use tracing_tree::HierarchicalLayer;
 
 #[derive(Debug)]
-struct Handler;
+struct Handler {
+    msg_queue: Arc<Mutex<HashMap<ChannelId, VecDeque<Message>>>>,
+}
+
+impl Handler {
+    fn new() -> Self {
+        Self {
+            msg_queue: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+}
 
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
-        info!("{} is connected!", ready.user.name);
+        info!("{} ready", ready.user.name);
     }
 
-    async fn message(&self, ctx: Context, msg: Message) {
-        let span = span!(Level::INFO, "msg");
-
+    async fn message(&self, _: Context, msg: Message) {
+        let _span = span!(Level::INFO, "msg");
         info!(?msg);
-        // if msg.content == "!ping" {
-        //     // Sending a message can fail, due to a network error, an
-        //     // authentication error, or lack of permissions to post in the
-        //     // channel, so log to stdout when some error happens, with a
-        //     // description of it.
-        //     if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
-        //         println!("Error sending message: {:?}", why);
-        //     }
-        // }
+
+        let msg_q = self.msg_queue.clone();
+        let x = msg_q.as_ref();
+
+        match x.lock() {
+            Err(err) => {
+                warn!(?err, "Mutex poisoned");
+            }
+            Ok(mut guard) => {
+                match guard.entry(msg.channel_id) {
+                    Entry::Vacant(entry) => {
+                        entry.insert(VecDeque::from([msg]));
+                    }
+                    Entry::Occupied(mut entry) => {
+                        let entry = entry.get_mut();
+                        entry.push_back(msg);
+                        if entry.len() >= 5 {
+                            entry.pop_front();
+                        }
+                    }
+                };
+                info!(?guard);
+            }
+        };
     }
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // let subscriber = Registry::default().with(HierarchicalLayer::new(2));
-    // tracing::subscriber::set_global_default(subscriber).unwrap();
     let layer = HierarchicalLayer::default()
         .with_writer(std::io::stdout)
         .with_indent_lines(true)
@@ -65,7 +91,7 @@ async fn main() -> anyhow::Result<()> {
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
 
     let mut client = Client::builder(token, intents)
-        .event_handler(Handler)
+        .event_handler(Handler::new())
         .await?;
 
     if let Err(why) = client.start().await {
