@@ -38,10 +38,7 @@ impl EventHandler for Handler {
         let _span = span!(Level::INFO, "msg");
         info!(?msg);
 
-        let msg_q = self.msg_queue.clone();
-        let x = msg_q.as_ref();
-
-        match x.lock() {
+        match self.msg_queue.clone().lock() {
             Err(err) => {
                 warn!(?err, "Mutex poisoned");
             }
