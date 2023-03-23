@@ -43,7 +43,7 @@ job "len-bot" {
         nix_flake_ref = "github:viperML/len-bot/${var.rev}#default"
         nix_flake_sha = var.narHash
         entrypoint = [
-          "bin/aegir-bot",
+          "bin/len-bot",
         ]
       }
 
