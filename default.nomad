@@ -6,10 +6,6 @@ job "len-bot" {
   group "main-group" {
     count = 1
 
-    restart {
-      attempts = 0
-    }
-
     network {
       mode = "bridge"
       dns {
