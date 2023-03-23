@@ -83,11 +83,17 @@ impl EventHandler for Handler {
                     Err(err) => warn!(?err, "Failed to send msg"),
                     Ok(r) => debug!(?r),
                 };
-            },
+            }
             Ok(r) => {
                 let choice = r.choices.first().unwrap().to_owned();
 
-                match msg.channel_id.say(&ctx.http, choice.message.content).await {
+                match msg
+                    .channel_id
+                    .send_message(&ctx.http, |m| {
+                        m.content(choice.message.content).reference_message(&msg)
+                    })
+                    .await
+                {
                     Err(err) => warn!(?err, "Failed to send msg"),
                     Ok(r) => debug!(?r),
                 };
