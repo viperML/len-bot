@@ -1,4 +1,4 @@
-job "aegir-bot" {
+job "len-bot" {
   datacenters = ["dc1"]
 
   type = "service"
