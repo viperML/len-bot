@@ -20,6 +20,6 @@
       buildInputs = [openssl];
       cargoLock.lockFile = ./Cargo.lock;
       src = ./.;
-      dontCheck = true;
+      doCheck = false;
     };
 }
