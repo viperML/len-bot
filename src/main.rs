@@ -74,7 +74,16 @@ impl EventHandler for Handler {
         };
 
         match self.ai_handler.chat().create(ai_args).await {
-            Err(err) => warn!(?err, "Didn't get openai response"),
+            Err(err) => {
+                warn!(?err, "Didn't get openai response");
+
+                let error_msg = format!("Oops: {:?}", &err);
+
+                match msg.channel_id.say(&ctx.http, error_msg).await {
+                    Err(err) => warn!(?err, "Failed to send msg"),
+                    Ok(r) => debug!(?r),
+                };
+            },
             Ok(r) => {
                 let choice = r.choices.first().unwrap().to_owned();
 
