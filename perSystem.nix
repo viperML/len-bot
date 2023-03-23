@@ -8,6 +8,7 @@
         openssl
         rust-analyzer-unwrapped
         rustfmt
+        clippy
       ];
 
       RUST_SRC_PATH = "${rustPlatform.rustLibSrc}";
