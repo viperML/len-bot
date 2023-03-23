@@ -68,6 +68,8 @@ impl EventHandler for Handler {
             return;
         }
 
+        let _typing_handle = ctx.http.start_typing(msg.channel_id.0);
+
         let ai_args = match build_chat_request(msg_queue) {
             None => return,
             Some(x) => x,
